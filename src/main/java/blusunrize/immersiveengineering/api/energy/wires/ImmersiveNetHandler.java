@@ -152,8 +152,10 @@ public class ImmersiveNetHandler
 
 	public void removeConnection(World world, Connection con, Vec3d vecStart, Vec3d vecEnd)
 	{
-		if(con==null||world==null)
+		if (con == null || world == null) {
 			return;
+		}
+
 		int dim = world.provider.getDimension();
 		resetCachedIndirectConnections(world, con.start);
 		Map<BlockPos, Set<Connection>> connsInDim = getMultimap(world.provider.getDimension());
@@ -164,20 +166,13 @@ public class ImmersiveNetHandler
 		forwardConns.removeIf(con::hasSameConnectors);
 		Map<BlockPos, BlockWireInfo> mapForDim = blockWireMap.lookup(world.provider.getDimension());
 		BiConsumer<BlockPos, Map<BlockPos, BlockWireInfo>> handle = (p, map) -> {
-			if(mapForDim!=null)
-			{
-				BlockWireInfo info = map.get(p);
-				if(info!=null)
-				{
-					for(int i = 0; i < 2; i++)
-					{
-						Set<Triple<Connection, Vec3d, Vec3d>> s = i==0?info.in: info.near;
-						s.removeIf((t) -> t.getLeft().hasSameConnectors(con));
-						if(s.isEmpty())
-							map.remove(p);
+			// Sometimes if connector was removed before connection,
+			// the raytracing fails and some for some blocks connections remains intact
+			for (int xOffset = -1; xOffset < 2; xOffset++) {
+				for (int yOffset = -1; yOffset < 2; yOffset++) {
+					for (int zOffset = -1; zOffset < 2; zOffset++) {
+						removeConnectionsForBlock(map, p.add(new Vec3i(xOffset, yOffset, zOffset)), con);
 					}
-					if(info.near.isEmpty()&&info.in.isEmpty())
-						map.remove(p);
 				}
 			}
 		};
@@ -205,6 +200,29 @@ public class ImmersiveNetHandler
 			world.addBlockEvent(con.end, world.getBlockState(con.end).getBlock(), -1, 0);
 
 		IESaveData.setDirty(dim);
+	}
+
+	private void removeConnectionsForBlock(
+		@Nullable Map<BlockPos, BlockWireInfo> wiresInfo,
+		@Nonnull BlockPos blockPos,
+		@Nonnull Connection connection
+	) {
+		if (wiresInfo == null) {
+			return;
+		}
+
+		BlockWireInfo info = wiresInfo.get(blockPos);
+		if (info == null) {
+			return;
+		}
+
+		Set<Triple<Connection, Vec3d, Vec3d>> in = info.in;
+		Set<Triple<Connection, Vec3d, Vec3d>> near = info.near;
+		in.removeIf(it -> it.getLeft().hasSameConnectors(connection));
+		near.removeIf(it -> it.getLeft().hasSameConnectors(connection));
+		if (in.isEmpty() && near.isEmpty()) {
+			wiresInfo.remove(blockPos);
+		}
 	}
 
 	public Set<Integer> getRelevantDimensions()
