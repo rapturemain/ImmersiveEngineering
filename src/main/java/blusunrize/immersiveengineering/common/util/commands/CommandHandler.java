@@ -33,7 +33,7 @@ public class CommandHandler extends CommandTreeBase
 		}
 		else
 		{
-			addSubcommand(new CommandCountInvalidConnection());
+			addSubcommand(new CommandCountConnections());
 			addSubcommand(new CommandMineral());
 			addSubcommand(new CommandShaders());
 			name = "ie";

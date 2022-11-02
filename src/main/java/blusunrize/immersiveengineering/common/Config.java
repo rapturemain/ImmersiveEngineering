@@ -118,6 +118,10 @@ public class Config
 		@Comment({"A config setting to enable debug features. These features may vary between releases, may cause crashes, and are unsupported. Do not enable unless asked to by a developer of IE."})
 		public static boolean enableDebug = false;
 
+		@Comment("A minimum permission level required to execute [/ie count-connections] command. 0 - player, 4 - op")
+		@RangeInt(min = 0, max = 4)
+		public static int countConnectionsCommandPermissionLevel = 0;
+
 		@SubConfig
 		public static Machines machines;
 		@SubConfig
